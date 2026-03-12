@@ -557,6 +557,21 @@ function onMapsLoaded() {
   dbg('✅ Maps SDK loaded!');
   initPlacesService();
   dbg('PlacesService initialized: ' + (placesService ? 'YES' : 'NO'));
+  // SDK just became ready — fetch photo for whatever card is currently showing
+  const place = getCurrentCard();
+  if (place) {
+    dbg('🔄 Retrying photo for current card: ' + place.name);
+    const imgTag = document.getElementById('cardImg');
+    const emojiEl = document.getElementById('cardEmoji');
+    fetchPlacePhoto(place.name).then(photoUrl => {
+      dbg(photoUrl ? '✅ Got photo on retry!' : '❌ Still no photo on retry');
+      if (photoUrl && imgTag && emojiEl) {
+        imgTag.onload = () => { imgTag.style.display = 'block'; emojiEl.style.display = 'none'; };
+        imgTag.onerror = () => { imgTag.style.display = 'none'; emojiEl.style.display = 'flex'; };
+        imgTag.src = photoUrl;
+      }
+    });
+  }
 }
 
 function dbg(msg) {
@@ -717,6 +732,8 @@ const state = {
 // ══════════════════════════════════════════════
 const photoCache = {};
 let placesService = null;
+let placesServiceReady = false;
+let placesServiceResolvers = []; // queue of callbacks waiting for service
 
 function initPlacesService() {
   if (!GOOGLE_API_KEY || GOOGLE_API_KEY === 'YOUR_API_KEY_HERE') {
@@ -730,36 +747,60 @@ function initPlacesService() {
     document.body.appendChild(mapDiv);
     const map = new google.maps.Map(mapDiv, { center: { lat: 39.9526, lng: -75.1652 }, zoom: 13 });
     placesService = new google.maps.places.PlacesService(map);
-    dbg('✅ PlacesService ready');
+    placesServiceReady = true;
+    dbg('✅ PlacesService ready — flushing ' + placesServiceResolvers.length + ' queued requests');
+    // Flush any requests that were waiting
+    placesServiceResolvers.forEach(fn => fn());
+    placesServiceResolvers = [];
   } catch(e) {
     dbg('❌ PlacesService error: ' + e.message);
   }
 }
 
-function fetchPlacePhoto(placeName) {
+function waitForPlacesService() {
   return new Promise((resolve) => {
-    if (photoCache[placeName] !== undefined) {
-      dbg('📦 Cache hit: ' + placeName);
-      resolve(photoCache[placeName]); return;
-    }
-    if (!placesService) {
-      dbg('❌ No placesService when fetching: ' + placeName);
-      resolve(null); return;
-    }
+    if (placesServiceReady) { resolve(); return; }
+    dbg('⏳ Queuing request — waiting for PlacesService...');
+    placesServiceResolvers.push(resolve);
+    // Also set a timeout so we don't wait forever
+    setTimeout(() => {
+      if (!placesServiceReady) {
+        dbg('⏱ Timeout waiting for PlacesService');
+        resolve();
+      }
+    }, 10000);
+  });
+}
 
+async function fetchPlacePhoto(placeName) {
+  if (photoCache[placeName] !== undefined) {
+    dbg('📦 Cache hit: ' + placeName);
+    return photoCache[placeName];
+  }
+
+  // Wait for placesService to be ready instead of giving up immediately
+  await waitForPlacesService();
+
+  if (!placesService) {
+    dbg('❌ PlacesService still null after wait: ' + placeName);
+    photoCache[placeName] = null;
+    return null;
+  }
+
+  return new Promise((resolve) => {
     dbg('🔍 Searching: ' + placeName);
     placesService.findPlaceFromQuery({
       query: placeName + ' Philadelphia PA',
       fields: ['photos', 'name']
     }, (results, status) => {
       dbg('Status for ' + placeName + ': ' + status);
-      if (status === google.maps.places.PlacesServiceStatus.OK && results[0] && results[0].photos && results[0].photos[0]) {
+      if (status === google.maps.places.PlacesServiceStatus.OK && results && results[0] && results[0].photos && results[0].photos[0]) {
         const url = results[0].photos[0].getUrl({ maxWidth: 800, maxHeight: 500 });
-        dbg('✅ Photo URL obtained for: ' + placeName);
+        dbg('✅ Got photo for: ' + placeName);
         photoCache[placeName] = url;
         resolve(url);
       } else {
-        dbg('❌ No photo for ' + placeName + ' — status: ' + status + (results ? ' results: ' + results.length : ' no results'));
+        dbg('❌ No photo — status: ' + status);
         photoCache[placeName] = null;
         resolve(null);
       }
@@ -1168,18 +1209,24 @@ function showToast(msg) {
   setTimeout(()=>t.classList.remove('show'), 2500);
 }
 // ── Load Google Maps JS SDK dynamically using the configured API key ──
+// Make onMapsLoaded explicitly global so Google can call it as a callback
+window.onMapsLoaded = onMapsLoaded;
+
 (function loadMapsSDK() {
   if (!GOOGLE_API_KEY || GOOGLE_API_KEY === 'YOUR_API_KEY_HERE') {
-    console.log('[A+M] No API key — skipping Maps SDK load');
+    dbg('❌ No API key — skipping Maps SDK load');
     return;
   }
-  console.log('[A+M] Loading Maps SDK...');
+  dbg('⬇️ Loading Maps SDK...');
   const script = document.createElement('script');
   script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_API_KEY}&libraries=places&callback=onMapsLoaded`;
   script.async = true;
   script.defer = true;
-  script.onerror = () => { console.log('[A+M] ❌ Maps SDK failed to load — check API key & billing'); };
+  script.onerror = (e) => {
+    dbg('❌ Maps SDK failed to load — check API key, billing & HTTP referrer restrictions');
+  };
   document.head.appendChild(script);
+  dbg('📡 Maps SDK script tag injected');
 })();
 </script>
 </body>
