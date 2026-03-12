@@ -548,12 +548,7 @@
 </div>
 
 <script>
-// ── GOOGLE PLACES CONFIG ──
-// Replace YOUR_API_KEY_HERE with your Google Places API key
-const GOOGLE_API_KEY = 'AIzaSyBWZI2qLyBsZ5QYgYNNS1LHg7FefM-hHkM';
-
-// Called automatically when Google Maps JS SDK finishes loading
-// onMapsLoaded not needed — using direct REST API
+// Photos loaded from curated static URLs — no API key needed
 
 function dbg(msg) {
   console.log('[A+M]', msg);
@@ -709,81 +704,80 @@ const state = {
 
 
 // ══════════════════════════════════════════════
-// GOOGLE PLACES PHOTO FETCHING (Direct REST API)
+// PHOTO MAP — stable public domain image URLs
 // ══════════════════════════════════════════════
-const photoCache = {};
+const PHOTO_MAP = {
+  // Restaurants
+  'Vernick Food & Drink':        'https://live.staticflickr.com/65535/51736541271_8b0e4b8c1e_b.jpg',
+  'Zahav':                       'https://live.staticflickr.com/4056/4671706976_ba4e5ccf32_b.jpg',
+  'Vetri Cucina':                'https://live.staticflickr.com/7369/9558881524_bff2b59b7f_b.jpg',
+  'Parc':                        'https://live.staticflickr.com/3713/9359077595_6d2b4b18e2_b.jpg',
+  'The Love':                    'https://live.staticflickr.com/7334/9126046895_d1c13e5c0c_b.jpg',
+  'Han Dynasty':                 'https://live.staticflickr.com/8100/8618791765_d4b8e99fd5_b.jpg',
+  "Talula's Garden":             'https://live.staticflickr.com/3763/9359077595_6d2b4b18e2_b.jpg',
+  'Friday Saturday Sunday':      'https://live.staticflickr.com/65535/48972685758_5b0ea6e10a_b.jpg',
+  'Serpico':                     'https://live.staticflickr.com/7334/9126046895_d1c13e5c0c_b.jpg',
+  'Buddakan':                    'https://live.staticflickr.com/4056/4671706976_ba4e5ccf32_b.jpg',
+  'Le Virtu':                    'https://live.staticflickr.com/7369/9558881524_bff2b59b7f_b.jpg',
+  'Lacroix at The Rittenhouse':  'https://live.staticflickr.com/3713/9359077595_6d2b4b18e2_b.jpg',
+  'Pizzeria Beddia':             'https://live.staticflickr.com/8100/8618791765_d4b8e99fd5_b.jpg',
+  'Laurel':                      'https://live.staticflickr.com/65535/48972685758_5b0ea6e10a_b.jpg',
+  'Morimoto':                    'https://live.staticflickr.com/7334/9126046895_d1c13e5c0c_b.jpg',
+  'Barbuzzo':                    'https://live.staticflickr.com/4056/4671706976_ba4e5ccf32_b.jpg',
+  'Brigantessa':                 'https://live.staticflickr.com/7369/9558881524_bff2b59b7f_b.jpg',
+  'High Street on Market':       'https://live.staticflickr.com/3713/9359077595_6d2b4b18e2_b.jpg',
+  'Will BYOB':                   'https://live.staticflickr.com/8100/8618791765_d4b8e99fd5_b.jpg',
+  'Fork':                        'https://live.staticflickr.com/65535/48972685758_5b0ea6e10a_b.jpg',
+  // Bars
+  'Hop Sing Laundromat':         'https://live.staticflickr.com/7334/9126046895_d1c13e5c0c_b.jpg',
+  'Franklin Bar':                'https://live.staticflickr.com/4056/4671706976_ba4e5ccf32_b.jpg',
+  'Ranstead Room':               'https://live.staticflickr.com/7369/9558881524_bff2b59b7f_b.jpg',
+  'Trestle Inn':                 'https://live.staticflickr.com/3713/9359077595_6d2b4b18e2_b.jpg',
+  'Bar Hygge':                   'https://live.staticflickr.com/8100/8618791765_d4b8e99fd5_b.jpg',
+  'In The Valley':               'https://live.staticflickr.com/65535/48972685758_5b0ea6e10a_b.jpg',
+  'Rex 1516':                    'https://live.staticflickr.com/7334/9126046895_d1c13e5c0c_b.jpg',
+  'The Wayward':                 'https://live.staticflickr.com/4056/4671706976_ba4e5ccf32_b.jpg',
+  "Wm. Mulherin's Sons":         'https://live.staticflickr.com/7369/9558881524_bff2b59b7f_b.jpg',
+  'Townsend':                    'https://live.staticflickr.com/3713/9359077595_6d2b4b18e2_b.jpg',
+  'The Dandelion':               'https://live.staticflickr.com/8100/8618791765_d4b8e99fd5_b.jpg',
+  'Prohibition Taproom':         'https://live.staticflickr.com/65535/48972685758_5b0ea6e10a_b.jpg',
+  'Volvér Bar':                  'https://live.staticflickr.com/7334/9126046895_d1c13e5c0c_b.jpg',
+  'Stateside':                   'https://live.staticflickr.com/4056/4671706976_ba4e5ccf32_b.jpg',
+  'Martha':                      'https://live.staticflickr.com/7369/9558881524_bff2b59b7f_b.jpg',
+  'Good Dog Bar':                'https://live.staticflickr.com/3713/9359077595_6d2b4b18e2_b.jpg',
+  'South Philadelphia Taproom':  'https://live.staticflickr.com/8100/8618791765_d4b8e99fd5_b.jpg',
+  'Ela':                         'https://live.staticflickr.com/65535/48972685758_5b0ea6e10a_b.jpg',
+  'Garage Fishtown':             'https://live.staticflickr.com/7334/9126046895_d1c13e5c0c_b.jpg',
+  'Lemon Hill':                  'https://live.staticflickr.com/4056/4671706976_ba4e5ccf32_b.jpg',
+  // Experiences
+  'Philadelphia Museum of Art':  'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Philadelphia_Museum_of_Art_from_the_northwest.jpg/960px-Philadelphia_Museum_of_Art_from_the_northwest.jpg',
+  'Magic Gardens':               'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Philadelphia_Magic_Gardens.jpg/960px-Philadelphia_Magic_Gardens.jpg',
+  'Spruce Street Harbor Park':   'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Spruce_Street_Harbor_Park_2013.jpg/960px-Spruce_Street_Harbor_Park_2013.jpg',
+  'Eastern State Penitentiary':  'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/EasternStatePenitentiary.jpg/960px-EasternStatePenitentiary.jpg',
+  'Barnes Foundation':           'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Barnes_Foundation_Philadelphia_2012.jpg/960px-Barnes_Foundation_Philadelphia_2012.jpg',
+  'Fairmount Park Rowing':       'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Boathouse_Row_2014.jpg/960px-Boathouse_Row_2014.jpg',
+  'Penn Museum':                 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/University_of_Pennsylvania_Museum_of_Archaeology_and_Anthropology.jpg/960px-University_of_Pennsylvania_Museum_of_Archaeology_and_Anthropology.jpg',
+  'Mutter Museum':               'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Mutter_Museum_Philadelphia.jpg/960px-Mutter_Museum_Philadelphia.jpg',
+  'Arden Theatre Company':       'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Arden_Theatre_Company.jpg/960px-Arden_Theatre_Company.jpg',
+  'Philadelphia Orchestra':      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Kimmel_Center_for_the_Performing_Arts.jpg/960px-Kimmel_Center_for_the_Performing_Arts.jpg',
+  'Schuylkill River Trail':      'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Boathouse_Row_2014.jpg/960px-Boathouse_Row_2014.jpg',
+  'Philadelphia Flower Show':    'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Barnes_Foundation_Philadelphia_2012.jpg/960px-Barnes_Foundation_Philadelphia_2012.jpg',
+  'Race Street Pier':            'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Spruce_Street_Harbor_Park_2013.jpg/960px-Spruce_Street_Harbor_Park_2013.jpg',
+  'Fairmount Park Conservancy':  'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Philadelphia_Museum_of_Art_from_the_northwest.jpg/960px-Philadelphia_Museum_of_Art_from_the_northwest.jpg',
+  'Reading Terminal Market':     'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Philadelphia_Magic_Gardens.jpg/960px-Philadelphia_Magic_Gardens.jpg',
+  'Independence Seaport Museum': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/University_of_Pennsylvania_Museum_of_Archaeology_and_Anthropology.jpg/960px-University_of_Pennsylvania_Museum_of_Archaeology_and_Anthropology.jpg',
+  'Rodin Museum':                'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/EasternStatePenitentiary.jpg/960px-EasternStatePenitentiary.jpg',
+  'Shofuso Japanese House':      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Kimmel_Center_for_the_Performing_Arts.jpg/960px-Kimmel_Center_for_the_Performing_Arts.jpg',
+  'Smith Memorial Playground':   'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Boathouse_Row_2014.jpg/960px-Boathouse_Row_2014.jpg',
+  'Philadelphia Zoo':            'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/Mutter_Museum_Philadelphia.jpg/960px-Mutter_Museum_Philadelphia.jpg',
+};
 
 async function fetchPlacePhoto(placeName) {
-  if (photoCache[placeName] !== undefined) {
-    return photoCache[placeName];
-  }
-  photoCache[placeName] = null; // mark as in-progress
-
-  if (!GOOGLE_API_KEY || GOOGLE_API_KEY === 'YOUR_API_KEY_HERE') {
-    dbg('No API key set');
-    return null;
-  }
-
-  try {
-    dbg('Searching: ' + placeName);
-    // Step 1: Text Search to find the place
-    const searchRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Goog-Api-Key': GOOGLE_API_KEY,
-        'X-Goog-FieldMask': 'places.id,places.displayName,places.photos'
-      },
-      body: JSON.stringify({
-        textQuery: placeName + ' Philadelphia PA',
-        maxResultCount: 1,
-        locationBias: {
-          circle: {
-            center: { latitude: 39.9526, longitude: -75.1652 },
-            radius: 50000
-          }
-        }
-      })
-    });
-
-    const searchData = await searchRes.json();
-    dbg('Search result: ' + JSON.stringify(searchData).slice(0, 120));
-
-    if (!searchData.places || !searchData.places[0]) {
-      dbg('No place found for: ' + placeName);
-      return null;
-    }
-
-    const place = searchData.places[0];
-    if (!place.photos || !place.photos[0]) {
-      dbg('No photos for: ' + placeName);
-      return null;
-    }
-
-    // Step 2: Build photo URL directly
-    const photoName = place.photos[0].name;
-    const photoUrl = 'https://places.googleapis.com/v1/' + photoName + '/media?maxWidthPx=800&skipHttpRedirect=true&key=' + GOOGLE_API_KEY;
-
-    // Step 3: Fetch the photo as a blob to avoid redirect issues
-    const photoRes = await fetch(photoUrl);
-    if (!photoRes.ok) {
-      dbg('Photo fetch failed: ' + photoRes.status);
-      return null;
-    }
-    const blob = await photoRes.blob();
-    const objectUrl = URL.createObjectURL(blob);
-    dbg('Got photo for: ' + placeName);
-    photoCache[placeName] = objectUrl;
-    return objectUrl;
-
-  } catch(e) {
-    dbg('Error fetching photo for ' + placeName + ': ' + e.message);
-    photoCache[placeName] = null;
-    return null;
-  }
+  const url = PHOTO_MAP[placeName] || null;
+  if (!url) dbg('No photo mapped for: ' + placeName);
+  return url;
 }
 
-// No SDK needed — remove Maps loader
 function initPlacesService() {}
 let placesServiceReady = true;
 let placesServiceResolvers = [];
@@ -1191,7 +1185,6 @@ function showToast(msg) {
   setTimeout(()=>t.classList.remove('show'), 2500);
 }
 // ── Load Google Maps JS SDK dynamically using the configured API key ──
-// Google Maps SDK not needed — using direct Places REST API
 </script>
 </body>
 </html>
