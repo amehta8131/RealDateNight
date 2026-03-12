@@ -1214,19 +1214,35 @@ window.onMapsLoaded = onMapsLoaded;
 
 (function loadMapsSDK() {
   if (!GOOGLE_API_KEY || GOOGLE_API_KEY === 'YOUR_API_KEY_HERE') {
-    dbg('❌ No API key — skipping Maps SDK load');
+    dbg('No API key — skipping Maps SDK load');
     return;
   }
-  dbg('⬇️ Loading Maps SDK...');
+  dbg('Loading Maps SDK...');
+  dbg('Page origin: ' + window.location.origin);
   const script = document.createElement('script');
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_API_KEY}&libraries=places&callback=onMapsLoaded`;
+  script.src = 'https://maps.googleapis.com/maps/api/js?key=' + GOOGLE_API_KEY + '&libraries=places&callback=onMapsLoaded';
   script.async = true;
   script.defer = true;
-  script.onerror = (e) => {
-    dbg('❌ Maps SDK failed to load — check API key, billing & HTTP referrer restrictions');
+  script.onerror = function() {
+    dbg('Maps SDK script error — key blocked or invalid');
   };
   document.head.appendChild(script);
-  dbg('📡 Maps SDK script tag injected');
+  dbg('Maps SDK script tag injected');
+
+  // If onMapsLoaded has not fired after 8 seconds, key is being blocked
+  setTimeout(function() {
+    if (!placesServiceReady) {
+      dbg('TIMEOUT — Maps SDK never loaded after 8s');
+      dbg('Fix: Go to Google Cloud Console > Credentials > your key');
+      dbg('Either remove HTTP referrer restrictions OR add this exact URL:');
+      dbg(window.location.origin + '/*');
+      // Quick geocode test to check if key itself works
+      fetch('https://maps.googleapis.com/maps/api/geocode/json?address=Philadelphia&key=' + GOOGLE_API_KEY)
+        .then(function(r) { return r.json(); })
+        .then(function(d) { dbg('Key test: ' + d.status + (d.error_message ? ' — ' + d.error_message : ' — key is valid!')); })
+        .catch(function(e) { dbg('Key test failed: ' + e.message); });
+    }
+  }, 8000);
 })();
 </script>
 </body>
