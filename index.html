@@ -538,6 +538,15 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- DEBUG PANEL -->
+<div id="debugPanel" style="display:none;position:fixed;bottom:80px;left:10px;right:10px;background:rgba(0,0,0,0.95);border:1px solid #C9A84C;border-radius:10px;padding:14px;font-size:11px;color:#fff;z-index:9999;max-height:220px;overflow-y:auto;font-family:monospace;">
+  <div style="color:#C9A84C;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+    <span>🔍 Photo Debug Log</span>
+    <span onclick="document.getElementById('debugPanel').style.display='none'" style="cursor:pointer;font-size:16px;line-height:1;">✕</span>
+  </div>
+  <div id="debugLog"><em style="color:#888">Waiting for logs...</em></div>
+</div>
+
 <script>
 // ── GOOGLE PLACES CONFIG ──
 // Replace YOUR_API_KEY_HERE with your Google Places API key
